@@ -191,12 +191,7 @@ All events extend `BaseEvent` with:
 
 ## 🚀 Quick Start
 
-### 1. Clone and Navigate
-```bash
-cd /Users/zahid/Projects/AI/shoping
-```
-
-### 2. Build and Start All Services
+### 1. Build and Start All Services
 ```bash
 docker-compose up --build
 ```
@@ -207,7 +202,7 @@ This will:
 - Start 4 PostgreSQL databases
 - Start all microservices with proper dependencies
 
-### 3. Wait for Services to be Ready
+### 2. Wait for Services to be Ready
 
 Monitor logs until you see:
 ```
