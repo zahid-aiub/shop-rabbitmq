@@ -1,109 +1,98 @@
 version: '3.8'
 
 services:
-  # RabbitMQ Message Broker
   rabbitmq:
     image: rabbitmq:3.12-management-alpine
-    container_name: rabbitmq
     ports:
-      - "5672:5672" # AMQP port
-      - "15672:15672" # Management UI port
+      - "5672:5672"
+      - "15672:15672"
     environment:
       RABBITMQ_DEFAULT_USER: guest
       RABBITMQ_DEFAULT_PASS: guest
     networks:
       - microservices-network
     healthcheck:
-      test: [ "CMD", "rabbitmq-diagnostics", "ping" ]
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
       interval: 10s
       timeout: 5s
       retries: 5
 
-  # PostgreSQL Databases
   order-db:
     image: postgres:16-alpine
-    container_name: order-db
     environment:
       POSTGRES_DB: order_db
       POSTGRES_USER: orderuser
       POSTGRES_PASSWORD: orderpass
     ports:
       - "5432:5432"
-    networks:
-      - microservices-network
     volumes:
       - order-db-data:/var/lib/postgresql/data
+    networks:
+      - microservices-network
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U orderuser -d order_db" ]
+      test: ["CMD-SHELL", "pg_isready -U orderuser -d order_db"]
       interval: 10s
       timeout: 5s
       retries: 5
 
   inventory-db:
     image: postgres:16-alpine
-    container_name: inventory-db
     environment:
       POSTGRES_DB: inventory_db
       POSTGRES_USER: inventoryuser
       POSTGRES_PASSWORD: inventorypass
     ports:
       - "5433:5432"
-    networks:
-      - microservices-network
     volumes:
       - inventory-db-data:/var/lib/postgresql/data
+    networks:
+      - microservices-network
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U inventoryuser -d inventory_db" ]
+      test: ["CMD-SHELL", "pg_isready -U inventoryuser -d inventory_db"]
       interval: 10s
       timeout: 5s
       retries: 5
 
   payment-db:
     image: postgres:16-alpine
-    container_name: payment-db
     environment:
       POSTGRES_DB: payment_db
       POSTGRES_USER: paymentuser
       POSTGRES_PASSWORD: paymentpass
     ports:
       - "5434:5432"
-    networks:
-      - microservices-network
     volumes:
       - payment-db-data:/var/lib/postgresql/data
+    networks:
+      - microservices-network
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U paymentuser -d payment_db" ]
+      test: ["CMD-SHELL", "pg_isready -U paymentuser -d payment_db"]
       interval: 10s
       timeout: 5s
       retries: 5
 
   notification-db:
     image: postgres:16-alpine
-    container_name: notification-db
     environment:
       POSTGRES_DB: notification_db
       POSTGRES_USER: notificationuser
       POSTGRES_PASSWORD: notificationpass
     ports:
       - "5435:5432"
-    networks:
-      - microservices-network
     volumes:
       - notification-db-data:/var/lib/postgresql/data
+    networks:
+      - microservices-network
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U notificationuser -d notification_db" ]
+      test: ["CMD-SHELL", "pg_isready -U notificationuser -d notification_db"]
       interval: 10s
       timeout: 5s
       retries: 5
 
-  # Microservices
   order-service:
-    build:
-      context: ./order-service
-      dockerfile: Dockerfile
-    container_name: order-service
-    ports:
-      - "8081:8081"
+    build: ./order-service
+    expose:
+      - "8081"
     environment:
       DB_HOST: order-db
       DB_PORT: 5432
@@ -121,15 +110,14 @@ services:
         condition: service_healthy
     networks:
       - microservices-network
+    deploy:
+      replicas: 3
     restart: unless-stopped
 
   inventory-service:
-    build:
-      context: ./inventory-service
-      dockerfile: Dockerfile
-    container_name: inventory-service
-    ports:
-      - "8082:8082"
+    build: ./inventory-service
+    expose:
+      - "8082"
     environment:
       DB_HOST: inventory-db
       DB_PORT: 5432
@@ -145,19 +133,16 @@ services:
         condition: service_healthy
       inventory-db:
         condition: service_healthy
-    volumes:
-      - ./:/app/data
     networks:
       - microservices-network
+    deploy:
+      replicas: 2
     restart: unless-stopped
 
   payment-service:
-    build:
-      context: ./payment-service
-      dockerfile: Dockerfile
-    container_name: payment-service
-    ports:
-      - "8083:8083"
+    build: ./payment-service
+    expose:
+      - "8083"
     environment:
       DB_HOST: payment-db
       DB_PORT: 5432
@@ -175,15 +160,14 @@ services:
         condition: service_healthy
     networks:
       - microservices-network
+    deploy:
+      replicas: 2
     restart: unless-stopped
 
   notification-service:
-    build:
-      context: ./notification-service
-      dockerfile: Dockerfile
-    container_name: notification-service
-    ports:
-      - "8084:8084"
+    build: ./notification-service
+    expose:
+      - "8084"
     environment:
       DB_HOST: notification-db
       DB_PORT: 5432
@@ -201,9 +185,10 @@ services:
         condition: service_healthy
     networks:
       - microservices-network
+    deploy:
+      replicas: 2
     restart: unless-stopped
 
-  # API Gateway
   nginx:
     image: nginx:1.25-alpine
     container_name: nginx-gateway
