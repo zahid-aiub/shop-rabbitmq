@@ -29,7 +29,7 @@ public class OrderController {
 
     @GetMapping("/test")
     public String testApi() {
-        return "Test from Order service ...";
+        return "Response from order-service after k8 deployments";
     }
 
     @PostMapping
