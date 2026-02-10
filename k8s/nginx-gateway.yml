@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
       - name: nginx-gateway
-        image: DOCKER_USERNAME/nginx:latest
+        image: zahidaiub/nginx:latest
         imagePullPolicy: Always
         ports:
         - containerPort: 80

@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
       - name: order-service
-        image: DOCKER_USERNAME/order-service:latest
+        image: zahidaiub/order-service:latest
         imagePullPolicy: Always
         ports:
         - containerPort: 8081
@@ -66,7 +66,7 @@ spec:
     spec:
       containers:
       - name: inventory-service
-        image: DOCKER_USERNAME/inventory-service:latest
+        image: zahidaiub/inventory-service:latest
         imagePullPolicy: Always
         ports:
         - containerPort: 8082
@@ -118,7 +118,7 @@ spec:
     spec:
       containers:
       - name: payment-service
-        image: DOCKER_USERNAME/payment-service:latest
+        image: zahidaiub/payment-service:latest
         imagePullPolicy: Always
         ports:
         - containerPort: 8083
@@ -170,7 +170,7 @@ spec:
     spec:
       containers:
       - name: notification-service
-        image: DOCKER_USERNAME/notification-service:latest
+        image: zahidaiub/notification-service:latest
         imagePullPolicy: Always
         ports:
         - containerPort: 8084
