@@ -6,59 +6,30 @@ A fully event-driven microservices architecture demonstrating asynchronous commu
 
 ```mermaid
 graph LR
-    subgraph External["External Access"]
-        Client[("fa:fa-user Client")] 
-    end
-
-    Client -->|HTTP Port 80| LB["fa:fa-network-wired Nginx Gateway<br/>(LoadBalancer)"]
-
-    subgraph Cluster["Kubernetes Cluster"]
-        direction LR
+    Client[Client] -->|HTTP| LB[Nginx Gateway]
+    
+    subgraph "Kubernetes Cluster"
+        LB -->|/api/orders| OS1[Order Service<br/>Pod 1]
+        LB -->|/api/orders| OS2[Order Service<br/>Pod 2]
+        LB -->|/api/inventory| IS1[Inventory Service<br/>Pod 1]
+        LB -->|/api/inventory| IS2[Inventory Service<br/>Pod 2]
+        LB -->|/api/payments| PS1[Payment Service<br/>Pod 1]
+        LB -->|/api/payments| PS2[Payment Service<br/>Pod 2]
+        LB -->|/api/notifications| NS1[Notification Service<br/>Pod 1]
+        LB -->|/api/notifications| NS2[Notification Service<br/>Pod 2]
         
-        subgraph Services["Microservices (2 Replicas each)"]
-            OS["fa:fa-shopping-cart Order Service"]
-            IS["fa:fa-boxes Inventory Service"]
-            PS["fa:fa-credit-card Payment Service"]
-            NS["fa:fa-bell Notification Service"]
-        end
-
-        subgraph Messaging["Message Broker"]
-            RMQ["fa:fa-comments RabbitMQ"]
-        end
-
-        subgraph Storage["Persistence Layer"]
-            OrderDB[("fa:fa-database Order DB")]
-            InvDB[("fa:fa-database Inventory DB")]
-            PayDB[("fa:fa-database Payment DB")]
-            NotDB[("fa:fa-database Notification DB")]
-        end
-
-        %% Routing
-        LB --> OS
-        LB --> IS
-        LB --> PS
-        LB --> NS
-
-        %% Event Flow
-        OS -.->|OrderCreated| RMQ
-        RMQ -.->|OrderCreated| IS
-        IS -.->|InventoryReserved/Failed| RMQ
-        RMQ -.->|InventoryReserved| PS
-        PS -.->|PaymentCompleted/Failed| RMQ
-        RMQ -.->|Final Status| NS
-
-        %% DB Connections
-        OS --- OrderDB
-        IS --- InvDB
-        PS --- PayDB
-        NS --- NotDB
+        OS1 & OS2 -->|OrderCreatedEvent| RMQ[RabbitMQ]
+        RMQ -->|OrderCreatedEvent| IS1 & IS2
+        IS1 & IS2 -->|InventoryReservedEvent<br/>InventoryFailedEvent| RMQ
+        RMQ -->|InventoryReservedEvent| PS1 & PS2
+        PS1 & PS2 -->|PaymentCompletedEvent<br/>PaymentFailedEvent| RMQ
+        RMQ -->|Final Events| NS1 & NS2
+        
+        OS1 & OS2 -.->|JPA| OrderDB[(Order DB)]
+        IS1 & IS2 -.->|JPA| InvDB[(Inventory DB)]
+        PS1 & PS2 -.->|JPA| PayDB[(Payment DB)]
+        NS1 & NS2 -.->|JPA| NotDB[(Notification DB)]
     end
-
-    %% Black and White Styling
-    classDef plain fill:#fff,stroke:#000,stroke-width:2px,color:#000;
-    class OS,IS,PS,NS,RMQ,LB,Client,OrderDB,InvDB,PayDB,NotDB plain
-    classDef cluster fill:#fff,stroke:#000,stroke-width:1px,stroke-dasharray: 5 5;
-    class Cluster,Services,Messaging,Storage,External cluster
 ```
 
 **Deployment**: Kubernetes with 2 replicas per service for high availability. Kubernetes Services provide automatic load balancing across pods.
