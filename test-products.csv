@@ -1,0 +1,11 @@
+Internal ID,Name,Description,Brand,Category,Price,Currency,Stock,EAN,Color,Size,Availability
+PROD-1001,Gaming Laptop,High performance gaming laptop,TechBrand,Electronics,1299.99,USD,50,1234567890123,Black,15-inch,In Stock
+PROD-1002,Wireless Mouse,Ergonomic wireless mouse,TechBrand,Accessories,29.99,USD,200,1234567890124,White,Standard,In Stock
+PROD-1003,Mechanical Keyboard,RGB mechanical keyboard,KeyMaster,Accessories,89.99,USD,100,1234567890125,Black,Full-size,In Stock
+PROD-1004,4K Monitor,27-inch 4K UHD monitor,ViewMax,Electronics,349.99,USD,30,1234567890126,Silver,27-inch,In Stock
+PROD-1005,USB-C Hub,7-in-1 USB-C hub,ConnectAll,Accessories,49.99,USD,150,1234567890127,Space Gray,Compact,In Stock
+PROD-1006,Noise Cancelling Headphones,Over-ear headphones,SoundPro,Audio,199.99,USD,75,1234567890128,Blue,Over-ear,In Stock
+PROD-1007,Smart Watch,Fitness tracker and smart watch,FitTech,Wearables,149.99,USD,80,1234567890129,Black,Medium,In Stock
+PROD-1008,Tablet,10-inch tablet with stylus,TabMaster,Electronics,299.99,USD,60,1234567890130,Silver,10-inch,In Stock
+PROD-1009,External SSD,1TB portable SSD,DataSafe,Storage,119.99,USD,120,1234567890131,Black,1TB,In Stock
+PROD-1010,Webcam,1080p HD webcam,ClearView,Accessories,59.99,USD,90,1234567890132,Black,Standard,In Stock

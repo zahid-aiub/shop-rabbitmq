@@ -1,0 +1,50 @@
+server:
+  port: 8082
+
+spring:
+  application:
+    name: inventory-service
+  
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5433}/${DB_NAME:inventory_db}?reWriteBatchedInserts=true
+    username: ${DB_USER:inventoryuser}
+    password: ${DB_PASSWORD:inventorypass}
+    driver-class-name: org.postgresql.Driver
+  
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+        jdbc:
+          batch_size: 50
+        order_inserts: true
+        order_updates: true
+  
+  rabbitmq:
+    host: ${RABBITMQ_HOST:localhost}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USER:guest}
+    password: ${RABBITMQ_PASSWORD:guest}
+
+# RabbitMQ Configuration
+rabbitmq:
+  exchanges:
+    order: order.events
+    inventory: inventory.events
+  queues:
+    order-created: order-created-queue
+    product-import: product-import-queue
+  routing-keys:
+    order-created: order.created
+    product-import: product.import
+    inventory-reserved: inventory.reserved
+    inventory-failed: inventory.failed
+
+logging:
+  level:
+    com.example.inventory: DEBUG
+    org.springframework.amqp: DEBUG
