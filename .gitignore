@@ -30,6 +30,7 @@ build/
 
 # macOS
 .DS_Store
+./products-2000000.csv
 
 # Logs
 *.log

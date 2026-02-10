@@ -6,20 +6,31 @@ A fully event-driven microservices architecture demonstrating asynchronous commu
 
 ```mermaid
 graph LR
-    Client[REST Client] -->|POST /api/orders| OrderService[Order Service]
-    OrderService -->|OrderCreatedEvent| RabbitMQ[(RabbitMQ)]
-    RabbitMQ -->|OrderCreatedEvent| InventoryService[Inventory Service]
+    Client[Client] -->|HTTP Request| Nginx[Nginx Gateway]
+    Nginx -->|/api/orders| OrderService[Order Service]
+    Nginx -->|/api/inventory| InventoryService[Inventory Service]
+    Nginx -->|/api/payments| PaymentService[Payment Service]
+    Nginx -->|/api/notifications| NotificationService[Notification Service]
+    
+    %% CSV Import Flow
+    Client -->|POST /api/import| Nginx
+    InventoryService -->|ImportChunkEvent| RabbitMQ[(RabbitMQ)]
+    RabbitMQ -->|ImportChunkEvent| InventoryService
+    
+    %% Order Flow
+    OrderService -->|OrderCreatedEvent| RabbitMQ
+    RabbitMQ -->|OrderCreatedEvent| InventoryService
     InventoryService -->|InventoryReservedEvent| RabbitMQ
     InventoryService -->|InventoryFailedEvent| RabbitMQ
-    RabbitMQ -->|InventoryReservedEvent| PaymentService[Payment Service]
+    RabbitMQ -->|InventoryReservedEvent| PaymentService
     PaymentService -->|PaymentCompletedEvent| RabbitMQ
     PaymentService -->|PaymentFailedEvent| RabbitMQ
-    RabbitMQ -->|Final Events| NotificationService[Notification Service]
+    RabbitMQ -->|Final Events| NotificationService
     
-    OrderService -.->|JPA/Hibernate| OrderDB[(Order DB)]
-    InventoryService -.->|JPA/Hibernate| InventoryDB[(Inventory DB)]
-    PaymentService -.->|JPA/Hibernate| PaymentDB[(Payment DB)]
-    NotificationService -.->|JPA/Hibernate| NotificationDB[(Notification DB)]
+    OrderService -.->|JPA| OrderDB[(Order DB)]
+    InventoryService -.->|JPA| InventoryDB[(Inventory DB)]
+    PaymentService -.->|JPA| PaymentDB[(Payment DB)]
+    NotificationService -.->|JPA| NotificationDB[(Notification DB)]
 ```
 
 ## 📋 Table of Contents
@@ -46,6 +57,8 @@ graph LR
 - **Message-Driven Workflows**: Topic exchanges with routing keys
 - **Saga Pattern**: Distributed transaction handling with compensating actions
 - **JSON Events**: Structured event payloads with metadata
+- **High-Volume CSV Data Upload**: Asynchronous processing of large CSV files (2M+ records) using RabbitMQ for chunking and flow control
+- **API Gateway**: Nginx configured as a reverse proxy for load balancing and routing
 - **Production-Ready**: Health checks, logging, and error handling
 
 ## 🛠️ Technology Stack
@@ -60,6 +73,7 @@ graph LR
 | Build Tool | Maven | 3.9.5 |
 | Container | Docker | - |
 | Orchestration | Docker Compose | 3.8 |
+| Gateway | Nginx | 1.25 |
 
 ## 🎯 Microservices Overview
 
@@ -264,7 +278,30 @@ curl http://localhost:8081/api/orders
 
 ### Get Order by ID
 ```bash
+### Get Order by ID
+```bash
 curl http://localhost:8081/api/orders/1
+```
+
+### Import Products (CSV)
+Triggers an asynchronous import job for a CSV file located on the server (mounted volume).
+
+```bash
+# Default file: products-2000000.csv
+curl -X POST http://localhost/api/import
+
+# Custom file name
+curl -X POST "http://localhost/api/import?fileName=test-products.csv"
+```
+
+**Response:**
+```json
+"Import started for file: /Users/zahid/Projects/AI/shoping/products-2000000.csv. Job ID: 550e8400-e29b-41d4-a716-446655440000"
+```
+
+### Check Import Status
+```bash
+curl http://localhost/api/import/{jobId}
 ```
 
 ## 🎯 Swagger/OpenAPI Documentation
@@ -603,6 +640,17 @@ docker exec -it order-db pg_isready -U orderuser -d order_db
 # Check if queues are bound correctly
 # Visit: http://localhost:15672/#/queues
 # Verify bindings in "Bindings" section
+```
+
+### Nginx 502 Bad Gateway
+
+**Issue**: Nginx returns 502 Bad Gateway because it holds onto stale IP addresses after backend services restart.
+**Solution**: Configure Nginx to use Docker's embedded DNS resolver (`127.0.0.11`) and variables for upstreams to force dynamic resolution.
+
+```nginx
+resolver 127.0.0.11 valid=10s;
+set $backend_host service-name;
+proxy_pass http://$backend_host:port;
 ```
 
 ### Port Conflicts
