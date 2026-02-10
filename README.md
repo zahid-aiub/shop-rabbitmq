@@ -5,8 +5,8 @@ A fully event-driven microservices architecture demonstrating asynchronous commu
 ## 🏗️ System Architecture
 
 ```mermaid
-graph TB
-    Client[Client] -->|HTTP| LB[Nginx Gateway<br/>LoadBalancer]
+graph LR
+    Client[Client] -->|HTTP| LB[Nginx Gateway]
     
     subgraph "Kubernetes Cluster"
         LB -->|/api/orders| OS1[Order Service<br/>Pod 1]
@@ -30,9 +30,6 @@ graph TB
         PS1 & PS2 -.->|JPA| PayDB[(Payment DB)]
         NS1 & NS2 -.->|JPA| NotDB[(Notification DB)]
     end
-    
-    style LB fill:#f9f,stroke:#333,stroke-width:2px
-    style RMQ fill:#ff9,stroke:#333,stroke-width:2px
 ```
 
 **Deployment**: Kubernetes with 2 replicas per service for high availability. Kubernetes Services provide automatic load balancing across pods.
