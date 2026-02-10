@@ -1,0 +1,155 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: order-db
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: order-db
+  template:
+    metadata:
+      labels:
+        app: order-db
+    spec:
+      containers:
+      - name: postgres
+        image: postgres:16-alpine
+        ports:
+        - containerPort: 5432
+        env:
+        - name: POSTGRES_DB
+          value: "order_db"
+        - name: POSTGRES_USER
+          value: "orderuser"
+        - name: POSTGRES_PASSWORD
+          value: "orderpass"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: order-db
+spec:
+  selector:
+    app: order-db
+  ports:
+    - protocol: TCP
+      port: 5432
+      targetPort: 5432
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: inventory-db
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: inventory-db
+  template:
+    metadata:
+      labels:
+        app: inventory-db
+    spec:
+      containers:
+      - name: postgres
+        image: postgres:16-alpine
+        ports:
+        - containerPort: 5432
+        env:
+        - name: POSTGRES_DB
+          value: "inventory_db"
+        - name: POSTGRES_USER
+          value: "inventoryuser"
+        - name: POSTGRES_PASSWORD
+          value: "inventorypass"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: inventory-db
+spec:
+  selector:
+    app: inventory-db
+  ports:
+    - protocol: TCP
+      port: 5432
+      targetPort: 5432
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: payment-db
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: payment-db
+  template:
+    metadata:
+      labels:
+        app: payment-db
+    spec:
+      containers:
+      - name: postgres
+        image: postgres:16-alpine
+        ports:
+        - containerPort: 5432
+        env:
+        - name: POSTGRES_DB
+          value: "payment_db"
+        - name: POSTGRES_USER
+          value: "paymentuser"
+        - name: POSTGRES_PASSWORD
+          value: "paymentpass"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: payment-db
+spec:
+  selector:
+    app: payment-db
+  ports:
+    - protocol: TCP
+      port: 5432
+      targetPort: 5432
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: notification-db
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: notification-db
+  template:
+    metadata:
+      labels:
+        app: notification-db
+    spec:
+      containers:
+      - name: postgres
+        image: postgres:16-alpine
+        ports:
+        - containerPort: 5432
+        env:
+        - name: POSTGRES_DB
+          value: "notification_db"
+        - name: POSTGRES_USER
+          value: "notificationuser"
+        - name: POSTGRES_PASSWORD
+          value: "notificationpass"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: notification-db
+spec:
+  selector:
+    app: notification-db
+  ports:
+    - protocol: TCP
+      port: 5432
+      targetPort: 5432

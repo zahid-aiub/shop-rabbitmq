@@ -1,0 +1,207 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: order-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: order-service
+  template:
+    metadata:
+      labels:
+        app: order-service
+    spec:
+      containers:
+      - name: order-service
+        image: DOCKER_USERNAME/order-service:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8081
+        env:
+        - name: DB_HOST
+          value: "order-db"
+        - name: DB_PORT
+          value: "5432"
+        - name: DB_NAME
+          value: "order_db"
+        - name: DB_USER
+          value: "orderuser"
+        - name: DB_PASSWORD
+          value: "orderpass"
+        - name: RABBITMQ_HOST
+          value: "rabbitmq"
+        - name: RABBITMQ_PORT
+          value: "5672"
+        - name: RABBITMQ_USER
+          value: "guest"
+        - name: RABBITMQ_PASSWORD
+          value: "guest"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: order-service
+spec:
+  selector:
+    app: order-service
+  ports:
+    - protocol: TCP
+      port: 8081
+      targetPort: 8081
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: inventory-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: inventory-service
+  template:
+    metadata:
+      labels:
+        app: inventory-service
+    spec:
+      containers:
+      - name: inventory-service
+        image: DOCKER_USERNAME/inventory-service:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8082
+        env:
+        - name: DB_HOST
+          value: "inventory-db"
+        - name: DB_PORT
+          value: "5432"
+        - name: DB_NAME
+          value: "inventory_db"
+        - name: DB_USER
+          value: "inventoryuser"
+        - name: DB_PASSWORD
+          value: "inventorypass"
+        - name: RABBITMQ_HOST
+          value: "rabbitmq"
+        - name: RABBITMQ_PORT
+          value: "5672"
+        - name: RABBITMQ_USER
+          value: "guest"
+        - name: RABBITMQ_PASSWORD
+          value: "guest"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: inventory-service
+spec:
+  selector:
+    app: inventory-service
+  ports:
+    - protocol: TCP
+      port: 8082
+      targetPort: 8082
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: payment-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: payment-service
+  template:
+    metadata:
+      labels:
+        app: payment-service
+    spec:
+      containers:
+      - name: payment-service
+        image: DOCKER_USERNAME/payment-service:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8083
+        env:
+        - name: DB_HOST
+          value: "payment-db"
+        - name: DB_PORT
+          value: "5432"
+        - name: DB_NAME
+          value: "payment_db"
+        - name: DB_USER
+          value: "paymentuser"
+        - name: DB_PASSWORD
+          value: "paymentpass"
+        - name: RABBITMQ_HOST
+          value: "rabbitmq"
+        - name: RABBITMQ_PORT
+          value: "5672"
+        - name: RABBITMQ_USER
+          value: "guest"
+        - name: RABBITMQ_PASSWORD
+          value: "guest"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: payment-service
+spec:
+  selector:
+    app: payment-service
+  ports:
+    - protocol: TCP
+      port: 8083
+      targetPort: 8083
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: notification-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: notification-service
+  template:
+    metadata:
+      labels:
+        app: notification-service
+    spec:
+      containers:
+      - name: notification-service
+        image: DOCKER_USERNAME/notification-service:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8084
+        env:
+        - name: DB_HOST
+          value: "notification-db"
+        - name: DB_PORT
+          value: "5432"
+        - name: DB_NAME
+          value: "notification_db"
+        - name: DB_USER
+          value: "notificationuser"
+        - name: DB_PASSWORD
+          value: "notificationpass"
+        - name: RABBITMQ_HOST
+          value: "rabbitmq"
+        - name: RABBITMQ_PORT
+          value: "5672"
+        - name: RABBITMQ_USER
+          value: "guest"
+        - name: RABBITMQ_PASSWORD
+          value: "guest"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: notification-service
+spec:
+  selector:
+    app: notification-service
+  ports:
+    - protocol: TCP
+      port: 8084
+      targetPort: 8084
