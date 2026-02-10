@@ -5,33 +5,37 @@ A fully event-driven microservices architecture demonstrating asynchronous commu
 ## 🏗️ System Architecture
 
 ```mermaid
-graph LR
-    Client[Client] -->|HTTP Request| Nginx[Nginx Gateway]
-    Nginx -->|/api/orders| OrderService[Order Service]
-    Nginx -->|/api/inventory| InventoryService[Inventory Service]
-    Nginx -->|/api/payments| PaymentService[Payment Service]
-    Nginx -->|/api/notifications| NotificationService[Notification Service]
+graph TB
+    Client[Client] -->|HTTP| LB[Nginx Gateway<br/>LoadBalancer]
     
-    %% CSV Import Flow
-    Client -->|POST /api/import| Nginx
-    InventoryService -->|ImportChunkEvent| RabbitMQ[(RabbitMQ)]
-    RabbitMQ -->|ImportChunkEvent| InventoryService
+    subgraph "Kubernetes Cluster"
+        LB -->|/api/orders| OS1[Order Service<br/>Pod 1]
+        LB -->|/api/orders| OS2[Order Service<br/>Pod 2]
+        LB -->|/api/inventory| IS1[Inventory Service<br/>Pod 1]
+        LB -->|/api/inventory| IS2[Inventory Service<br/>Pod 2]
+        LB -->|/api/payments| PS1[Payment Service<br/>Pod 1]
+        LB -->|/api/payments| PS2[Payment Service<br/>Pod 2]
+        LB -->|/api/notifications| NS1[Notification Service<br/>Pod 1]
+        LB -->|/api/notifications| NS2[Notification Service<br/>Pod 2]
+        
+        OS1 & OS2 -->|OrderCreatedEvent| RMQ[RabbitMQ]
+        RMQ -->|OrderCreatedEvent| IS1 & IS2
+        IS1 & IS2 -->|InventoryReservedEvent<br/>InventoryFailedEvent| RMQ
+        RMQ -->|InventoryReservedEvent| PS1 & PS2
+        PS1 & PS2 -->|PaymentCompletedEvent<br/>PaymentFailedEvent| RMQ
+        RMQ -->|Final Events| NS1 & NS2
+        
+        OS1 & OS2 -.->|JPA| OrderDB[(Order DB)]
+        IS1 & IS2 -.->|JPA| InvDB[(Inventory DB)]
+        PS1 & PS2 -.->|JPA| PayDB[(Payment DB)]
+        NS1 & NS2 -.->|JPA| NotDB[(Notification DB)]
+    end
     
-    %% Order Flow
-    OrderService -->|OrderCreatedEvent| RabbitMQ
-    RabbitMQ -->|OrderCreatedEvent| InventoryService
-    InventoryService -->|InventoryReservedEvent| RabbitMQ
-    InventoryService -->|InventoryFailedEvent| RabbitMQ
-    RabbitMQ -->|InventoryReservedEvent| PaymentService
-    PaymentService -->|PaymentCompletedEvent| RabbitMQ
-    PaymentService -->|PaymentFailedEvent| RabbitMQ
-    RabbitMQ -->|Final Events| NotificationService
-    
-    OrderService -.->|JPA| OrderDB[(Order DB)]
-    InventoryService -.->|JPA| InventoryDB[(Inventory DB)]
-    PaymentService -.->|JPA| PaymentDB[(Payment DB)]
-    NotificationService -.->|JPA| NotificationDB[(Notification DB)]
+    style LB fill:#f9f,stroke:#333,stroke-width:2px
+    style RMQ fill:#ff9,stroke:#333,stroke-width:2px
 ```
+
+**Deployment**: Kubernetes with 2 replicas per service for high availability. Kubernetes Services provide automatic load balancing across pods.
 
 ## 📋 Table of Contents
 
@@ -42,23 +46,22 @@ graph LR
 - [RabbitMQ Topology](#rabbitmq-topology)
 - [Prerequisites](#prerequisites)
 - [Quick Start](#quick-start)
-- [API Usage](#api-usage)
 - [Testing Scenarios](#testing-scenarios)
 - [Monitoring](#monitoring)
-- [Project Structure](#project-structure)
-- [Database Schema](#database-schema)
 
 ## ✨ Features
 
 - **Event-Driven Architecture**: Pure asynchronous communication via RabbitMQ
 - **Microservices Pattern**: Four independent, loosely coupled services
+- **Kubernetes Deployment**: Container orchestration with auto-scaling and self-healing
+- **High Availability**: 2 replicas per service with automatic load balancing
 - **Database Per Service**: Complete data isolation with PostgreSQL
-- **Container Orchestration**: Fully Dockerized with Docker Compose
 - **Message-Driven Workflows**: Topic exchanges with routing keys
 - **Saga Pattern**: Distributed transaction handling with compensating actions
 - **JSON Events**: Structured event payloads with metadata
 - **High-Volume CSV Data Upload**: Asynchronous processing of large CSV files (2M+ records) using RabbitMQ for chunking and flow control
-- **API Gateway**: Nginx configured as a reverse proxy for load balancing and routing
+- **API Gateway**: Nginx configured as a reverse proxy and load balancer
+- **CI/CD Pipeline**: Automated Docker image builds and deployments via GitHub Actions
 - **Production-Ready**: Health checks, logging, and error handling
 
 ## 🛠️ Technology Stack
@@ -72,8 +75,9 @@ graph LR
 | ORM | Hibernate/JPA | - |
 | Build Tool | Maven | 3.9.5 |
 | Container | Docker | - |
-| Orchestration | Docker Compose | 3.8 |
+| Orchestration | Kubernetes | 1.34.1 |
 | Gateway | Nginx | 1.25 |
+| CI/CD | GitHub Actions | - |
 
 ## 🎯 Microservices Overview
 
@@ -216,114 +220,114 @@ payment-service     | Started PaymentServiceApplication
 notification-service| Started NotificationServiceApplication
 ```
 
-### 4. Verify System Health
+## 🚢 Kubernetes Deployment
 
-**Check Container Status:**
+### Prerequisites
+
+- **Docker Desktop** with Kubernetes enabled
+- **kubectl** configured for local cluster
+- **GitHub Account** with Docker Hub credentials set as secrets
+
+### Deploy to Kubernetes
+
+1. **Enable Kubernetes in Docker Desktop:**
+   - Open Docker Desktop → Settings → Kubernetes
+   - Check "Enable Kubernetes"
+   - Apply & Restart
+
+2. **Verify kubectl context:**
+   ```bash
+   kubectl config current-context
+   # Should show: docker-desktop
+   ```
+
+3. **Deploy all services:**
+   ```bash
+   kubectl apply -f k8s/
+   ```
+
+4. **Check deployment status:**
+   ```bash
+   kubectl get pods
+   kubectl get services
+   ```
+
+5. **Access the application:**
+   ```bash
+   # Get nginx-gateway service details
+   kubectl get svc nginx-gateway
+   
+   # Access via NodePort (if LoadBalancer is pending)
+   curl http://localhost:<NodePort>/api/orders
+   
+   # Or use port-forward
+   kubectl port-forward svc/nginx-gateway 8080:80
+   curl http://localhost:8080/api/orders
+   ```
+
+### CI/CD with GitHub Actions
+
+The project includes automated CI/CD pipeline:
+
+1. **Set GitHub Secrets:**
+   - `DOCKER_USERNAME`: Your Docker Hub username
+   - `DOCKER_PASSWORD`: Your Docker Hub password/token
+
+2. **Set up Self-Hosted Runner:**
+   ```bash
+   # On your local machine
+   mkdir actions-runner && cd actions-runner
+   # Follow instructions from: GitHub Repo → Settings → Actions → Runners → New self-hosted runner
+   ```
+
+3. **Automatic Deployment:**
+   - Push code to `main` branch
+   - GitHub Actions builds Docker images
+   - Images pushed to Docker Hub
+   - Self-hosted runner deploys to local Kubernetes cluster
+
+### Kubernetes Features
+
+- **High Availability**: 2 replicas per service
+- **Auto-healing**: Failed pods automatically restart
+- **Load Balancing**: Kubernetes Services distribute traffic
+- **Rolling Updates**: Zero-downtime deployments
+- **Self-Healing**: Automatic pod replacement on failure
+
+### Scale Services
+
 ```bash
-docker-compose ps
+# Scale order-service to 3 replicas
+kubectl scale deployment order-service --replicas=3
+
+# Verify
+kubectl get pods -l app=order-service
 ```
 
-All services should show status as `Up`.
-
-**Access RabbitMQ Management UI:**
-- URL: http://localhost:15672
-- Username: `guest`
-- Password: `guest`
-
-## 📖 API Usage
-
-### Create an Order
-
-**Successful Order (Product in Stock):**
-```bash
-curl -X POST http://localhost:8081/api/orders \
-  -H "Content-Type: application/json" \
-  -d '{
-    "customerId": "CUST-001",
-    "items": [
-      {
-        "productId": "PROD-001",
-        "productName": "Laptop",
-        "quantity": 2,
-        "price": 999.99
-      }
-    ]
-  }'
-```
-
-**Response:**
-```json
-{
-  "orderId": 1,
-  "customerId": "CUST-001",
-  "totalAmount": 1999.98,
-  "status": "PENDING",
-  "createdAt": "2026-01-15T22:43:06",
-  "items": [
-    {
-      "id": 1,
-      "productId": "PROD-001",
-      "productName": "Laptop",
-      "quantity": 2,
-      "price": 999.99
-    }
-  ]
-}
-```
-
-### Get All Orders
-```bash
-curl http://localhost:8081/api/orders
-```
-
-### Get Order by ID
-```bash
-### Get Order by ID
-```bash
-curl http://localhost:8081/api/orders/1
-```
-
-### Import Products (CSV)
-Triggers an asynchronous import job for a CSV file located on the server (mounted volume).
+### View Logs
 
 ```bash
-# Default file: products-2000000.csv
-curl -X POST http://localhost/api/import
+# All pods of a service
+kubectl logs -l app=order-service
 
-# Custom file name
-curl -X POST "http://localhost/api/import?fileName=test-products.csv"
+# Specific pod
+kubectl logs <pod-name>
+
+# Follow logs
+kubectl logs -f -l app=order-service
 ```
 
-**Response:**
-```json
-"Import started for file: /Users/zahid/Projects/AI/shoping/products-2000000.csv. Job ID: 550e8400-e29b-41d4-a716-446655440000"
-```
+### Delete Deployment
 
-### Check Import Status
 ```bash
-curl http://localhost/api/import/{jobId}
+# Delete all resources
+kubectl delete -f k8s/
+
+# Or delete specific resources
+kubectl delete deployment order-service
+kubectl delete service order-service
 ```
 
-## 🎯 Swagger/OpenAPI Documentation
-
-The Order Service includes interactive API documentation using Swagger UI.
-
-**Access Swagger UI**:
-- URL: http://localhost:8081/swagger-ui.html
-- OpenAPI JSON: http://localhost:8081/api-docs
-
-**Features**:
-- Interactive API testing interface
-- Complete request/response schemas
-- Example values and parameter descriptions
-- Try-it-out functionality for all endpoints
-
-**Available Endpoints in Swagger**:
-- `POST /api/orders` - Create a new order
-- `GET /api/orders` - Get all orders
-- `GET /api/orders/{orderId}` - Get order by ID
-
-You can test the APIs directly from the Swagger UI without needing curl or Postman!
 
 ## 🧪 Testing Scenarios
 
@@ -484,133 +488,6 @@ docker-compose logs -f notification-service
 docker-compose logs -f rabbitmq
 ```
 
-## 📁 Project Structure
-
-```
-event-driven-order-fulfillment/
-├── order-service/
-│   ├── src/main/java/com/example/order/
-│   │   ├── config/          # RabbitMQ configuration
-│   │   ├── controller/      # REST API endpoints
-│   │   ├── dto/             # Request/Response DTOs
-│   │   ├── entity/          # JPA entities
-│   │   ├── messaging/       # Event producers & DTOs
-│   │   ├── repository/      # JPA repositories
-│   │   └── service/         # Business logic
-│   ├── src/main/resources/
-│   │   └── application.yml
-│   ├── Dockerfile
-│   └── pom.xml
-│
-├── inventory-service/       # Similar structure
-├── payment-service/         # Similar structure
-├── notification-service/    # Similar structure
-│
-├── docker-compose.yml
-└── README.md
-```
-
-## 💾 Database Schema
-
-### Order Service Schema
-
-**orders**
-- id (PK)
-- customer_id
-- total_amount
-- status (PENDING, CONFIRMED, PROCESSING, COMPLETED, FAILED)
-- created_at
-
-**order_items**
-- id (PK)
-- order_id (FK)
-- product_id
-- product_name
-- quantity
-- price
-
-### Inventory Service Schema
-
-**inventory_items**
-- id (PK)
-- product_id (UNIQUE)
-- product_name
-- available_quantity
-- reserved_quantity
-- updated_at
-
-### Payment Service Schema
-
-**payments**
-- id (PK)
-- order_id
-- customer_id
-- amount
-- status (PENDING, PROCESSING, COMPLETED, FAILED)
-- payment_method
-- created_at
-- completed_at
-- failure_reason
-
-**payment_transactions**
-- id (PK)
-- payment_id (FK)
-- transaction_id
-- amount
-- gateway
-- status (INITIATED, SUCCESS, FAILED)
-- timestamp
-- response_code
-- response_message
-
-### Notification Service Schema
-
-**notification_logs**
-- id (PK)
-- event_type
-- order_id
-- customer_id
-- message
-- recipient_info
-- channel (EMAIL, SMS, PUSH)
-- status (PENDING, SENT, FAILED)
-- sent_at
-
-## 🔧 Configuration
-
-### Environment Variables
-
-Each service can be configured via environment variables in `docker-compose.yml`:
-
-**Database Configuration:**
-- `DB_HOST`: Database hostname
-- `DB_NAME`: Database name
-- `DB_USER`: Database username
-- `DB_PASSWORD`: Database password
-
-**RabbitMQ Configuration:**
-- `RABBITMQ_HOST`: RabbitMQ hostname
-- `RABBITMQ_PORT`: RabbitMQ port (5672)
-- `RABBITMQ_USER`: RabbitMQ username
-- `RABBITMQ_PASSWORD`: RabbitMQ password
-
-## 🛑 Stopping the System
-
-**Stop All Services:**
-```bash
-docker-compose down
-```
-
-**Stop and Remove Volumes (Complete Cleanup):**
-```bash
-docker-compose down -v
-```
-
-**Remove Built Images:**
-```bash
-docker-compose down --rmi all
-```
-
 ## 🐛 Troubleshooting
 
 ### Services Won't Start
@@ -662,13 +539,6 @@ lsof -i :8081
 
 # Modify port mapping in docker-compose.yml if needed
 ```
-
-## 📚 Additional Resources
-
-- [Spring Boot Documentation](https://spring.io/projects/spring-boot)
-- [RabbitMQ Tutorials](https://www.rabbitmq.com/getstarted.html)
-- [Spring AMQP Reference](https://docs.spring.io/spring-amqp/reference/)
-- [Docker Compose Documentation](https://docs.docker.com/compose/)
 
 ## 🎓 Learning Outcomes
 
