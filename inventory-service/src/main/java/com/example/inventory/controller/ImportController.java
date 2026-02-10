@@ -8,7 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api/import")
+@RequestMapping("/api/inventory")
 @RequiredArgsConstructor
 public class ImportController {
 
@@ -21,7 +21,7 @@ public class ImportController {
     }
 
 
-    @PostMapping
+    @PostMapping("/import")
     public ResponseEntity<String> importProducts(
             @RequestParam(value = "fileName", defaultValue = "products-2000000.csv") String fileName) {
         // Since we mounted ./:/app/data, the file should be at /app/data/{fileName}
